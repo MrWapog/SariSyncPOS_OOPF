@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "SariSync — GUI (default)",
+            "request": "launch",
+            "mainClass": "sarisync.POSApplication",
+            "projectName": "SariSync_Java_OOP"
+        },
+        {
+            "type": "java",
+            "name": "SariSync — Console demo (--demo)",
+            "request": "launch",
+            "mainClass": "sarisync.POSApplication",
+            "args": "--demo",
+            "projectName": "SariSync_Java_OOP"
+        }
+    ]
+}
