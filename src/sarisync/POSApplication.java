@@ -1,14 +1,13 @@
 package sarisync;
 
-import sarisync.bootstrap.CatalogSeeder;
 import sarisync.config.POSConfig;
 import sarisync.enums.PaymentMethod;
+import sarisync.enums.UserRole;
 import sarisync.interfaces.IPaymentProcessor;
 import sarisync.models.*;
 import sarisync.repositories.InMemoryProductRepository;
 import sarisync.repositories.InMemoryTransactionRepository;
 import sarisync.services.*;
-import sarisync.ui.SariSyncApp;
 
 import java.util.List;
 
@@ -42,7 +41,8 @@ import java.util.List;
 public class POSApplication {
 
     public static void main(String[] args) {
-        boolean consoleDemo = args.length > 0 && "--demo".equals(args[0]);
+
+        System.out.println("=== " + POSConfig.APP_NAME + " v" + POSConfig.APP_VERSION + " ===\n");
 
         // ── 1. Bootstrap repositories ──────────────────────────────────────
         InMemoryProductRepository     productRepo = new InMemoryProductRepository();
@@ -55,24 +55,18 @@ public class POSApplication {
         TransactionService txnService     = new TransactionService(txnRepo);
 
         // ── 3. Seed product catalogue ──────────────────────────────────────
-        CatalogSeeder.seed(productService);
+        Product nova      = productService.addProduct("Nova (BBQ)",         "Snacks",       25,  120, "", "Crispy potato chips");
+        Product coke      = productService.addProduct("Coca-Cola 1.5L",     "Beverages",    65,  80,  "", "Ice-cold cola");
+        Product pancit    = productService.addProduct("Pancit Canton",      "Instant Food", 15,  200, "", "Instant noodles");
+        Product candy     = productService.addProduct("Assorted Candy",     "Snacks",        5,  300, "", "Sweet colorful candies");
+        Product shampoo   = productService.addProduct("Shampoo Sachets",    "Personal Care", 8,  150, "", "Single-use shampoo sachet");
+        Product sardines  = productService.addProduct("Canned Sardines",    "Canned Goods", 35,  100, "", "Sardines in tomato sauce");
+        Product water     = productService.addProduct("Bottled Water 500ml","Beverages",    12,  250, "", "Purified drinking water");
+        Product biscuits  = productService.addProduct("Biscuits",           "Snacks",       20,   90, "", "Crunchy butter biscuits");
 
-        if (!consoleDemo) {
-            SariSyncApp.launch(productService, cartService);
-            return;
-        }
-
-        System.out.println("=== " + POSConfig.APP_NAME + " v" + POSConfig.APP_VERSION + " (console demo) ===\n");
         System.out.println("Catalogue loaded: " + productService.findAll().size() + " products");
         System.out.println("Low-stock items : " + productService.findLowStock().size());
         System.out.println();
-
-        Product nova     = productService.findByCategory("Snacks").stream()
-            .filter(p -> p.getName().startsWith("Nova")).findFirst().orElseThrow();
-        Product coke     = productService.findByCategory("Beverages").stream()
-            .filter(p -> p.getName().contains("Coca")).findFirst().orElseThrow();
-        Product candy    = productService.findByCategory("Snacks").stream()
-            .filter(p -> p.getName().contains("Candy")).findFirst().orElseThrow();
 
         // ── 4. Demo: Authentication ────────────────────────────────────────
         System.out.println("--- Authentication ---");

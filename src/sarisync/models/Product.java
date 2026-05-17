@@ -1,7 +1,5 @@
 package sarisync.models;
 
-import sarisync.config.POSConfig;
-
 import java.util.Objects;
 
 /**
@@ -21,36 +19,31 @@ public class Product extends BaseEntity {
     private double price;
     private int    stock;
     private String imageUrl;
-    private String fallbackIcon;
     private String description;
 
     // ── Constructor ───────────────────────────────────────────────────────
     public Product(String name, String category, double price, int stock,
-                   String imageUrl, String fallbackIcon, String description) {
+                   String imageUrl, String description) {
         super();                          // assigns UUID + timestamps
-        this.name         = name;
-        this.category     = category;
-        this.price        = price;
-        this.stock        = stock;
-        this.imageUrl     = imageUrl != null ? imageUrl : "";
-        this.fallbackIcon = fallbackIcon != null && !fallbackIcon.isBlank()
-            ? fallbackIcon : POSConfig.DEFAULT_FALLBACK_ICON;
-        this.description  = description;
+        this.name        = name;
+        this.category    = category;
+        this.price       = price;
+        this.stock       = stock;
+        this.imageUrl    = imageUrl;
+        this.description = description;
         // validate() is invoked by BaseEntity constructor via doValidate()
     }
 
     /** Hydration constructor: restores an existing product from a persistent store. */
     public Product(String id, String name, String category, double price,
-                   int stock, String imageUrl, String fallbackIcon, String description) {
+                   int stock, String imageUrl, String description) {
         super(id);
-        this.name         = name;
-        this.category     = category;
-        this.price        = price;
-        this.stock        = stock;
-        this.imageUrl     = imageUrl != null ? imageUrl : "";
-        this.fallbackIcon = fallbackIcon != null && !fallbackIcon.isBlank()
-            ? fallbackIcon : POSConfig.DEFAULT_FALLBACK_ICON;
-        this.description  = description;
+        this.name        = name;
+        this.category    = category;
+        this.price       = price;
+        this.stock       = stock;
+        this.imageUrl    = imageUrl;
+        this.description = description;
     }
 
     // ── Validation Contract (from BaseEntity) ─────────────────────────────
@@ -68,14 +61,8 @@ public class Product extends BaseEntity {
     public String getCategory()    { return category;    }
     public double getPrice()       { return price;       }
     public int    getStock()       { return stock;       }
-    public String getImageUrl()     { return imageUrl;     }
-    public String getFallbackIcon() { return fallbackIcon; }
-    public String getDescription()  { return description;  }
-
-    /** True when a non-empty uploaded image is stored (data URI or file path). */
-    public boolean hasImage() {
-        return imageUrl != null && !imageUrl.isBlank();
-    }
+    public String getImageUrl()    { return imageUrl;    }
+    public String getDescription() { return description; }
 
     // ── Controlled Mutators (Encapsulation — enforce business rules) ───────
     public void setName(String name) {
@@ -102,17 +89,7 @@ public class Product extends BaseEntity {
         touch();
     }
 
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl != null ? imageUrl : "";
-        touch();
-    }
-
-    public void setFallbackIcon(String fallbackIcon) {
-        this.fallbackIcon = (fallbackIcon == null || fallbackIcon.isBlank())
-            ? POSConfig.DEFAULT_FALLBACK_ICON : fallbackIcon;
-        touch();
-    }
-
+    public void setImageUrl(String imageUrl)       { this.imageUrl    = imageUrl; touch(); }
     public void setDescription(String description) { this.description = description; touch(); }
 
     // ── Domain Behaviour ──────────────────────────────────────────────────

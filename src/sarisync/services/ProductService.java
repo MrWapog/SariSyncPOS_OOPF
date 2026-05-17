@@ -35,13 +35,12 @@ public class ProductService {
      * @throws IllegalArgumentException if a product with the same name already exists.
      */
     public Product addProduct(String name, String category, double price,
-                              int stock, String imageUrl, String fallbackIcon,
-                              String description) {
+                              int stock, String imageUrl, String description) {
         boolean nameTaken = repository.findAll().stream()
             .anyMatch(p -> p.getName().equalsIgnoreCase(name));
         if (nameTaken) throw new IllegalArgumentException("A product named '" + name + "' already exists");
 
-        Product product = new Product(name, category, price, stock, imageUrl, fallbackIcon, description);
+        Product product = new Product(name, category, price, stock, imageUrl, description);
         return repository.save(product);
     }
 
@@ -51,8 +50,7 @@ public class ProductService {
      */
     public Product updateProduct(String id, String name, String category,
                                  double price, int stock,
-                                 String imageUrl, String fallbackIcon,
-                                 String description) {
+                                 String imageUrl, String description) {
         Product product = repository.findById(id).orElseThrow(() ->
             new IllegalArgumentException("Product not found: " + id)
         );
@@ -61,7 +59,6 @@ public class ProductService {
         product.setPrice(price);
         product.setStock(stock);
         product.setImageUrl(imageUrl);
-        product.setFallbackIcon(fallbackIcon);
         product.setDescription(description);
         return repository.update(product);
     }

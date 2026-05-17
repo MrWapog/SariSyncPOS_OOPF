@@ -32,22 +32,6 @@ public final class POSConfig {
     /** Products at or below this stock level are flagged as "low stock". */
     public static final int LOW_STOCK_THRESHOLD = 20;
 
-    // ── Product Images ──────────────────────────────────────────────────────
-    /** Maximum upload size in bytes (5 MB). */
-    public static final long MAX_IMAGE_BYTES = 5L * 1024 * 1024;
-
-    /** Allowed image extensions (lowercase, without dot). */
-    public static final String[] ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"};
-
-    /** Default emoji when no custom fallback icon is chosen. */
-    public static final String DEFAULT_FALLBACK_ICON = "📦";
-
-    /** Emoji options for the fallback-icon dropdown in Add/Edit Product. */
-    public static final String[] FALLBACK_ICONS = {
-        "📦", "🍿", "🥤", "🍜", "🍬", "🧴", "🐟", "💧", "🍪",
-        "🍚", "☕", "🧃", "🍫", "🧼", "🥫", "🍞", "🥚", "🧻"
-    };
-
     // ── Application Metadata ──────────────────────────────────────────────
     public static final String APP_NAME    = "SariSync";
     public static final String APP_VERSION = "2.4.1";
