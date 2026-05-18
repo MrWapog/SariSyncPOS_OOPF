@@ -5,10 +5,6 @@ import java.util.Objects;
 /**
  * ENCAPSULATION + INHERITANCE
  *
- * Product represents a merchandise item sold through the SariSync POS.
- * All fields are private; state changes are controlled through methods that
- * enforce business rules (no negative price, no negative stock, etc.).
- *
  * Inherits identity and audit timestamps from BaseEntity.
  */
 public class Product extends BaseEntity {
