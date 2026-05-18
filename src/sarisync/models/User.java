@@ -7,14 +7,6 @@ import java.util.Objects;
 /**
  * ENCAPSULATION + INHERITANCE
  *
- * User represents an authenticated staff member (cashier or admin).
- * Password is stored as a hash (never in plain text).
- * Role field controls which screens/operations are permitted.
- *
- * NOTE: In the original TypeScript code, credentials were stored in
- * plain text inside the React context — a security issue. This class
- * addresses that by keeping the raw password private and only exposing
- * a password-verification method.
  */
 public class User extends BaseEntity {
 
