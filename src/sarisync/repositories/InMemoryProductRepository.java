@@ -12,4 +12,5 @@ import java.util.Optional;
 public class InMemoryProductRepository extends sarisync.repositories.InMemoryProductRepositoryImpl {
     // All behaviour inherited from InMemoryProductRepositoryImpl.
     // Additional query methods can be added here as the system grows.
+    // Will be use in future update. Antok nako
 }
