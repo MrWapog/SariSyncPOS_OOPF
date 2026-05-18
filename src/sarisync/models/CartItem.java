@@ -4,10 +4,6 @@ import java.util.Objects;
 
 /**
  * ENCAPSULATION + INHERITANCE
- *
- * CartItem is an immutable-by-design value object that links a Product to
- * the quantity selected in the current sales transaction.
- *
  * Quantity changes must go through controlled mutators that enforce
  * the rule: quantity must always be >= 1.
  */
