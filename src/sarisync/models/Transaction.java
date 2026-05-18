@@ -12,10 +12,6 @@ import java.util.Objects;
 /**
  * ENCAPSULATION + INHERITANCE
  *
- * Transaction is the central aggregate in the SariSync domain.
- * All monetary fields are computed and stored at creation — making
- * the transaction a reliable audit record that is immutable after completion.
- *
  * Fields are private and exposed only as read-only getters, enforcing
  * the rule that a completed transaction cannot be retroactively altered
  * (it can only be voided).
