@@ -1,14 +1,5 @@
 package sarisync.config;
 
-/**
- * ENCAPSULATION: Centralises all POS business constants.
- *
- * Priority fix from the original codebase:
- *   In the TypeScript version, magic numbers (0.12, 100, 10, 50, 200)
- *   were scattered across store.tsx, POSMainScreen, and PaymentScreen.
- *   This class eliminates all magic numbers and serves as the single
- *   source of truth for every business rule.
- */
 public final class POSConfig {
 
     // ── Tax ───────────────────────────────────────────────────────────────
