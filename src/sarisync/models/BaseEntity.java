@@ -6,17 +6,6 @@ import java.util.UUID;
 
 /**
  * ABSTRACTION + INHERITANCE foundation class.
- *
- * BaseEntity is an abstract class that provides:
- *  - A universally unique identifier (UUID) generated at creation
- *  - Audit timestamps (createdAt, updatedAt)
- *  - Abstract validation contract that all subclasses must honour
- *
- * Every domain model in SariSync inherits from this class, ensuring
- * consistent identity and traceability across the system.
- *
- * Design pattern: Template Method — validate() is called by the
- * constructor via doValidate(), subclasses fill in the rules.
  */
 public abstract class BaseEntity {
 
