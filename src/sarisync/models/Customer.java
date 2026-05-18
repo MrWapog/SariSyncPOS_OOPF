@@ -7,14 +7,11 @@ import java.util.Objects;
 /**
  * ENCAPSULATION + INHERITANCE
  *
- * Customer encapsulates all loyalty-programme state and rules.
- * External classes cannot directly manipulate points; they must call
- * the controlled earn() / redeem() methods that apply business rules.
- *
  * Business Rules (from POSConfig):
  *  - 1 point earned per ₱20 spent
  *  - 100 points = ₱10 discount
  *  - 200 points = ₱50 free-item credit
+ *(Will be based/Change for next 
  */
 public class Customer extends BaseEntity {
 
