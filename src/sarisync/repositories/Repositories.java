@@ -7,12 +7,12 @@ import sarisync.models.Transaction;
 import java.util.*;
 import java.util.stream.Collectors;
 
-// ══════════════════════════════════════════════════════════════════════════
+
 //  INHERITANCE — Both repositories implement IRepository.
 //  The service layer depends only on the IRepository interface, so these
 //  in-memory implementations can later be replaced with JPA/SQL versions
 //  without touching a single line of service code.
-// ══════════════════════════════════════════════════════════════════════════
+//Future use for DATA Input
 
 // ─── Product Repository ───────────────────────────────────────────────────
 
