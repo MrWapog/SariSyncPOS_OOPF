@@ -1,10 +1,5 @@
 package sarisync.enums;
 
-/**
- * Enumerates all supported payment methods in the SariSync POS system.
- * New payment channels should be added here to enforce type safety
- * across all payment processors.
- */
 public enum PaymentMethod {
     CASH("Cash"),
     CARD("Card"),
