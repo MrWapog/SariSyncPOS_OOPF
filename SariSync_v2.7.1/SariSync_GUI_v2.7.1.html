@@ -972,7 +972,7 @@ function renderDashboard(){
       ${state.transactions.length?`
         <table class="tbl"><thead><tr><th>ID</th><th>Date & Time</th><th>Customer</th><th>Method</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
         <tbody>${[...state.transactions].reverse().slice(0,10).map(t=>`
-          <tr style="${t.status==='voided'?'opacity:.6':''}"}>
+          <tr style="${t.status==='voided'?'opacity:.6':''}">
             <td style="font-family:'Outfit',sans-serif;font-weight:700;font-size:12px">${t.id}</td>
             <td class="ts">${fmtDate(t.date)}</td>
             <td>${t.customer}</td>
