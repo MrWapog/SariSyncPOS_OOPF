@@ -5,10 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Attach to Edge",
+            "port": 9222,
+            "request": "attach",
+            "type": "msedge",
+            "webRoot": "${workspaceFolder}"
+        },
+        {
             "type": "msedge",
             "request": "launch",
-            "name": "Open SariSync_GUI_v2.7.2.html",
-            "file": "d:\\Downloads\\Gits\\SariSyncPOS_OOPF\\SariSync_v2.7.2\\SariSync_GUI_v2.7.2.html"
+            "name": "Launch Edge against localhost",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}"
         }
     ]
 }
