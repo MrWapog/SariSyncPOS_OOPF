@@ -1,8 +1,5 @@
 package sarisync.enums;
 
-/**
- * Represents the lifecycle states of a POS transaction.
- */
 public enum TransactionStatus {
     PENDING("Pending"),
     COMPLETED("Completed"),

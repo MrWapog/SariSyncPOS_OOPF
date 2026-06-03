@@ -1,9 +1,5 @@
 package sarisync.enums;
 
-/**
- * Defines the roles available in the SariSync POS system.
- * Used for role-based access control (RBAC).
- */
 public enum UserRole {
     CASHIER("Cashier"),
     ADMIN("Admin");

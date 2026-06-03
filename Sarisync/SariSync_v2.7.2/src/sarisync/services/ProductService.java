@@ -8,16 +8,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * ENCAPSULATION + INHERITANCE (extends BaseService pattern)
- *
- * ProductService is the single point of entry for all product operations.
- * It wraps the repository and adds business-layer rules on top:
- *   - Rejects duplicate product names
- *   - Prevents deletion of products currently in active transactions
- *   - Provides filtered queries (by category, low-stock alerts)
- *
- * The UI layer (React/JSX) should never access the repository directly;
- * it always calls through this service.
+ * ENCAPSULATION + INHERITANCE 
  */
 public class ProductService {
 

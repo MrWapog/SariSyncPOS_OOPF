@@ -9,16 +9,6 @@ import java.util.stream.Collectors;
 
 /**
  * ENCAPSULATION
- *
- * AuthService owns all authentication AND user-management logic.
- *
- * v2.7.2 changes:
- *   - Quick Sign In removed — no hardcoded demo logins
- *   - Auto-create default admin (username=admin, password=admin123) only if no users exist
- *   - First-login password change requirement enforced via User.mustChangePassword()
- *   - User Management CRUD methods added: createUser, updateUser, resetPassword, toggleStatus
- *   - last_login timestamp recorded on every successful login
- *   - Inactive users cannot log in
  */
 public class AuthService {
 
@@ -60,11 +50,6 @@ public class AuthService {
 
     // ── Authentication ────────────────────────────────────────────────────
 
-    /**
-     * Attempts to log in. Returns the authenticated User if successful, or empty.
-     * Inactive accounts and accounts with wrong passwords return Optional.empty().
-     * On success: sets the current session and records the last_login timestamp.
-     */
     public Optional<User> login(String username, String plainTextPassword) {
         // Safety net — recreate default admin if all users got somehow deleted
         ensureDefaultAdmin();
@@ -78,10 +63,6 @@ public class AuthService {
         return Optional.of(user);
     }
 
-    /**
-     * Completes the first-login flow.
-     * Called when a user with mustChangePassword=true sets their new credentials.
-     */
     public void completeFirstLogin(String userId, String newUsername, String newPassword) {
         User user = findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
@@ -112,8 +93,6 @@ public class AuthService {
     // ── User Management (Admin operations) ────────────────────────────────
 
     /**
-     * Creates a new user (admin only).
-     *
      * @throws IllegalArgumentException if the username is already taken.
      */
     public User createUser(String fullName, String username, String plainTextPassword,

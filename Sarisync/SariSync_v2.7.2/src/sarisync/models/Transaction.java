@@ -11,14 +11,6 @@ import java.util.Objects;
 
 /**
  * ENCAPSULATION + INHERITANCE
- *
- * Transaction is the central aggregate in the SariSync domain.
- *
- * v2.6.0 additions:
- *  - voidReason: optional reason text entered when voiding
- *  - voidedAt:   timestamp of when the transaction was voided
- *  - isToday():  helper used by dashboard to filter "Sales Today"
- *  - formatted display of transactionDate for UI/reports
  */
 public class Transaction extends BaseEntity {
 
@@ -117,10 +109,6 @@ public class Transaction extends BaseEntity {
     // ── Domain Behaviour ──────────────────────────────────────────────────
 
     /**
-     * Marks this transaction as VOIDED with an optional reason.
-     * Records the exact void timestamp.
-     * Only COMPLETED transactions can be voided.
-     *
      * @param reason optional cashier/admin reason for voiding
      */
     public void void_(String reason) {

@@ -7,19 +7,6 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Represents a single cashier shift session.
- *
- * Lifecycle:
- *   1. openShift()  → status = OPEN,   startingAmount captured, openedBy recorded
- *   2. closeShift() → status = CLOSED, closedBy recorded, cash variance calculated
- *
- * Cash Variance Calculation (Req 3 from v2.7.2 spec):
- *   expectedCash    = startingAmount + cashSales
- *   variance        = actualCash - expectedCash
- *   shortageAmount  = variance < 0 ? abs(variance) : 0
- *   overageAmount   = variance > 0 ? variance      : 0
- */
 public class Shift extends BaseEntity {
 
     // ── Required fields ──────────────────────────────────────────────────

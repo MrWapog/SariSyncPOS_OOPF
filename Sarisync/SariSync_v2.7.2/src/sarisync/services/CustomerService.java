@@ -9,13 +9,6 @@ import java.util.stream.Collectors;
 
 /**
  * ENCAPSULATION + ABSTRACTION
- *
- * CustomerService handles all customer management operations.
- * Enforces:
- *   - No duplicate names
- *   - No duplicate contact numbers
- *   - Centralised search (by name or phone)
- *   - Loyalty points assigned automatically after each purchase
  */
 public class CustomerService {
 
@@ -37,9 +30,6 @@ public class CustomerService {
         return repository.save(c);
     }
 
-    /**
-     * Updates an existing customer's name and/or contact number.
-     */
     public Customer updateCustomer(String id, String name, String contactNumber) {
         Customer c = repository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + id));
@@ -63,10 +53,6 @@ public class CustomerService {
 
     public Optional<Customer> findById(String id) { return repository.findById(id); }
 
-    /**
-     * Search customers by name or contact number (case-insensitive).
-     * Used in POS customer selector.
-     */
     public List<Customer> search(String query) {
         if (query == null || query.isBlank()) return findAll();
         String lower = query.toLowerCase().trim();

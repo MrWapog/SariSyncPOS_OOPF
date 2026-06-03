@@ -7,12 +7,7 @@ import java.util.Objects;
 
 /**
  * ENCAPSULATION + INHERITANCE
- *
- * User represents an authenticated staff member (cashier or admin).
- * Password is stored as a hash (never in plain text).
- * Role field controls which screens/operations are permitted.
- *
- * v2.7.2 additions:
+ * 
  *   - fullName               — Display name shown in User Management
  *   - isDefaultAdmin         — Marks the system-seeded default admin (cannot be deactivated)
  *   - mustChangePassword     — Forces password change on next login

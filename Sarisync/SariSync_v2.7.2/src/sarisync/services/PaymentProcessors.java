@@ -2,13 +2,8 @@ package sarisync.services;
 
 import sarisync.enums.PaymentMethod;
 
-// ══════════════════════════════════════════════════════════════════════════
-//  POLYMORPHISM — All three classes extend AbstractPaymentProcessor and
-//  override doProcess() with channel-specific behaviour. The TransactionService
-//  never knows which concrete type it is calling; it calls process() on the
-//  IPaymentProcessor reference and polymorphism selects the right implementation.
-// ══════════════════════════════════════════════════════════════════════════
 
+//  POLYMORPHISM
 // ─── Cash Payment ─────────────────────────────────────────────────────────
 
 /**
@@ -36,11 +31,6 @@ class CashPaymentProcessor extends AbstractPaymentProcessor {
 
 // ─── Card Payment ─────────────────────────────────────────────────────────
 
-/**
- * Handles credit/debit card transactions.
- * In a production system this would call an acquiring bank API.
- * Amount paid equals amount due; no change is returned.
- */
 class CardPaymentProcessor extends AbstractPaymentProcessor {
 
     @Override
@@ -56,10 +46,6 @@ class CardPaymentProcessor extends AbstractPaymentProcessor {
 
 // ─── GCash Payment ────────────────────────────────────────────────────────
 
-/**
- * Handles GCash e-wallet transactions.
- * In production this would integrate with GCash's merchant API.
- */
 class GCashPaymentProcessor extends AbstractPaymentProcessor {
 
     @Override

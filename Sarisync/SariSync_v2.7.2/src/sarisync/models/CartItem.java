@@ -4,17 +4,11 @@ import java.util.Objects;
 
 /**
  * ENCAPSULATION + INHERITANCE
- *
- * CartItem is an immutable-by-design value object that links a Product to
- * the quantity selected in the current sales transaction.
- *
- * Quantity changes must go through controlled mutators that enforce
- * the rule: quantity must always be >= 1.
  */
 public class CartItem extends BaseEntity {
 
     // ── Private Fields ────────────────────────────────────────────────────
-    private final Product product;   // product reference is final — never swapped mid-cart
+    private final Product product;   
     private int           quantity;
 
     // ── Constructor ───────────────────────────────────────────────────────
@@ -22,7 +16,6 @@ public class CartItem extends BaseEntity {
         super();
         this.product  = product;
         this.quantity = quantity;
-        // validate() is called by BaseEntity
         validate();
     }
 
@@ -39,10 +32,6 @@ public class CartItem extends BaseEntity {
 
     // ── Domain Behaviour ──────────────────────────────────────────────────
 
-    /**
-     * Returns the subtotal for this line item (price × quantity).
-     * Does NOT include tax — tax is applied at the cart/transaction level.
-     */
     public double getLineSubtotal() {
         return product.getPrice() * quantity;
     }

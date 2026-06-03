@@ -4,13 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * ABSTRACTION — Generic repository contract.
- *
- * All data-access classes implement this interface, meaning the service
- * layer never depends on a concrete storage mechanism (in-memory, SQL, etc.).
- * Swapping from InMemory to a database requires only a new implementation —
- * no changes to any service class.
- *
+ * ABSTRACTION 
  * @param <T>  Entity type (Product, Transaction, User, …)
  * @param <ID> Identifier type (usually String for UUID)
  */

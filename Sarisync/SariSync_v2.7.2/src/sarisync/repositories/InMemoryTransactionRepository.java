@@ -5,10 +5,7 @@ import sarisync.models.Transaction;
 import java.util.Optional;
 
 /**
- * INHERITANCE — extends InMemoryTransactionRepositoryImpl
- *
- * v2.6.0: adds findByNumber() so TransactionService.voidTransaction()
- * can locate a transaction by its human-readable TXN-XXXXXXXX-NNNN number.
+ * INHERITANCE 
  */
 public class InMemoryTransactionRepository extends InMemoryTransactionRepositoryImpl {
 

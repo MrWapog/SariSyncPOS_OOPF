@@ -7,17 +7,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Manages the lifecycle of cashier shifts.
- *
- * Guarantees:
- *   - At most ONE open shift at any time
- *   - Closed shifts never resume (filtered out of getActiveShift)
- *   - Cash variance (shortage / overage) is calculated on close and stored
- *   - All events are recorded via AuditService if provided
- *
- * Mirrors the shifts table in the Supabase backend.
- */
+
 public class ShiftService {
 
     private final Map<String, Shift> shifts = new HashMap<>();

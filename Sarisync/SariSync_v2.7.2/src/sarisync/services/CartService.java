@@ -11,12 +11,6 @@ import java.util.Optional;
 
 /**
  * ENCAPSULATION
- *
- * CartService manages the active shopping cart.
- * All cart mutation goes through controlled methods.
- *
- * v2.6.0: Added updateQuantity() to support direct quantity input
- * in the POS dashboard (cashier types a number instead of clicking +/- repeatedly).
  */
 public class CartService {
 
@@ -26,8 +20,6 @@ public class CartService {
     // ── Cart Mutations ────────────────────────────────────────────────────
 
     /**
-     * Adds a product to the cart.
-     * If it already exists, increments quantity by 1.
      * @throws IllegalStateException if product is out of stock.
      */
     public CartItem addProduct(Product product) {
@@ -49,10 +41,6 @@ public class CartService {
         return item;
     }
 
-    /**
-     * Removes a product entirely from the cart.
-     * Stores it for potential undo.
-     */
     public void removeProduct(String productId) {
         CartItem toRemove = findByProductId(productId).orElseThrow(() ->
             new IllegalArgumentException("Product not in cart: " + productId)
@@ -62,14 +50,6 @@ public class CartService {
     }
 
     /**
-     * NEW (v2.6.0): Directly sets a specific quantity for a cart item.
-     * Called when cashier types a number into the quantity input field.
-     *
-     * Rules:
-     *  - qty < 1 → removes item from cart
-     *  - qty > product.stock → throws IllegalStateException
-     *  - qty valid → sets quantity, updates totals
-     *
      * @param productId target product
      * @param qty       desired quantity (1 or more)
      * @param product   product reference (needed for stock validation)

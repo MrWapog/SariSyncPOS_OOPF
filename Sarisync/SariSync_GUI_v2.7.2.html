@@ -592,6 +592,207 @@ const SUPA_URL='https://wabhtfxjhfjsbobrdumr.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYmh0ZnhqaGZqc2JvYnJkdW1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0MjU0MjYsImV4cCI6MjA5NTAwMTQyNn0.dfyv1X8C-t8mZXmQvUpkxLrvpWH5JuEz5WiALkRL3gg';
 const db=supabase.createClient(SUPA_URL,SUPA_KEY);
 
+/* ════════════════════════════════════════════════════════════════════════
+   SECURITY MODULE  ·  v2.7.2 — PBKDF2 passwords + AES-GCM contact encryption
+   Uses the browser-native Web Crypto API (no external libraries needed)
+   ════════════════════════════════════════════════════════════════════════ */
+const Security = (function(){
+  // Application-level secret. Used only as ONE factor in key derivation;
+  // changing this in a future version will require a data re-encryption pass.
+  const APP_SECRET     = 'sarisync-pos-v2.7.2-encryption-anchor';
+  const HASH_PREFIX    = 'pbkdf2$';
+  const ENC_PREFIX     = 'enc:v1:';
+  const PBKDF2_ROUNDS  = 100000;            // OWASP-recommended minimum for PBKDF2-SHA256
+  const SALT_BYTES     = 16;
+  const IV_BYTES       = 12;                // AES-GCM standard
+  const HASH_KEY_BITS  = 256;
+
+  // ── Helpers: hex <-> bytes ──────────────────────────────────────────────
+  function bytesToHex(b){
+    return Array.from(b).map(function(x){return x.toString(16).padStart(2,'0');}).join('');
+  }
+  function hexToBytes(h){
+    const a=new Uint8Array(h.length/2);
+    for(let i=0;i<a.length;i++) a[i]=parseInt(h.substr(i*2,2),16);
+    return a;
+  }
+  function randomBytes(n){
+    return crypto.getRandomValues(new Uint8Array(n));
+  }
+
+  // ── Password Hashing: PBKDF2-SHA256 ─────────────────────────────────────
+  async function pbkdf2(passwordStr, saltBytes, rounds){
+    const baseKey = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(passwordStr),
+      {name:'PBKDF2'},
+      false,
+      ['deriveBits']
+    );
+    const bits = await crypto.subtle.deriveBits(
+      {name:'PBKDF2', salt:saltBytes, iterations:rounds, hash:'SHA-256'},
+      baseKey,
+      HASH_KEY_BITS
+    );
+    return new Uint8Array(bits);
+  }
+
+  /** Hashes a plain-text password. Output format: pbkdf2$<rounds>$<salt_hex>$<hash_hex> */
+  async function hashPassword(plainText){
+    if(!plainText) throw new Error('Password is required');
+    const salt = randomBytes(SALT_BYTES);
+    const hash = await pbkdf2(plainText, salt, PBKDF2_ROUNDS);
+    return HASH_PREFIX + PBKDF2_ROUNDS + '$' + bytesToHex(salt) + '$' + bytesToHex(hash);
+  }
+
+  /**
+   * Verifies a plain-text password against a stored hash.
+   * Supports both the new PBKDF2 format AND legacy plain-text values
+   * (so existing accounts continue to work during migration).
+   *
+   * @return {needsRehash: boolean, valid: boolean}
+   */
+  async function verifyPassword(plainText, storedHash){
+    if(!storedHash || !plainText) return {valid:false, needsRehash:false};
+
+    // New format: pbkdf2$<rounds>$<salt>$<hash>
+    if(storedHash.startsWith(HASH_PREFIX)){
+      const parts = storedHash.split('$');
+      if(parts.length!==4) return {valid:false, needsRehash:false};
+      const rounds = parseInt(parts[1],10);
+      const salt   = hexToBytes(parts[2]);
+      const stored = parts[3];
+      const computed = bytesToHex(await pbkdf2(plainText, salt, rounds));
+      return {valid: constantTimeEquals(computed, stored), needsRehash:false};
+    }
+
+    // Legacy format: plain text. Match directly and flag for re-hash.
+    if(storedHash === plainText){
+      return {valid:true, needsRehash:true};
+    }
+    return {valid:false, needsRehash:false};
+  }
+
+  /** Timing-safe string comparison (prevents timing attacks). */
+  function constantTimeEquals(a, b){
+    if(a.length !== b.length) return false;
+    let r = 0;
+    for(let i=0;i<a.length;i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return r === 0;
+  }
+
+  // ── AES-GCM Contact Encryption ──────────────────────────────────────────
+  let _aesKeyPromise = null;
+  function getAesKey(){
+    if(_aesKeyPromise) return _aesKeyPromise;
+    _aesKeyPromise = (async function(){
+      // Derive AES-256 key from APP_SECRET via PBKDF2 (deterministic for the app)
+      const baseKey = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(APP_SECRET),
+        {name:'PBKDF2'},
+        false,
+        ['deriveKey']
+      );
+      return await crypto.subtle.deriveKey(
+        {name:'PBKDF2',
+         salt: new TextEncoder().encode('sarisync.contacts.v1'),
+         iterations: 50000,
+         hash: 'SHA-256'},
+        baseKey,
+        {name:'AES-GCM', length: 256},
+        false,
+        ['encrypt','decrypt']
+      );
+    })();
+    return _aesKeyPromise;
+  }
+
+  /**
+   * Encrypts a contact number. Output format: enc:v1:<iv_hex>:<ciphertext_hex>
+   * @param plainText e.g. "09171234567"
+   */
+  async function encryptContact(plainText){
+    if(plainText==null || plainText==='') return '';
+    if(typeof plainText !== 'string') plainText = String(plainText);
+    // If already encrypted, return as-is (idempotent)
+    if(plainText.startsWith(ENC_PREFIX)) return plainText;
+
+    const key = await getAesKey();
+    const iv  = randomBytes(IV_BYTES);
+    const ct  = await crypto.subtle.encrypt(
+      {name:'AES-GCM', iv: iv},
+      key,
+      new TextEncoder().encode(plainText)
+    );
+    return ENC_PREFIX + bytesToHex(iv) + ':' + bytesToHex(new Uint8Array(ct));
+  }
+
+  /**
+   * Decrypts a stored contact value.
+   * Returns plain text whether the stored value is encrypted or legacy plain text.
+   */
+  async function decryptContact(stored){
+    if(stored==null || stored==='') return '';
+    if(typeof stored !== 'string')   return String(stored);
+    if(!stored.startsWith(ENC_PREFIX)) return stored;  // legacy plain text
+
+    try{
+      const parts = stored.substring(ENC_PREFIX.length).split(':');
+      if(parts.length!==2) return stored;
+      const iv = hexToBytes(parts[0]);
+      const ct = hexToBytes(parts[1]);
+      const key = await getAesKey();
+      const pt = await crypto.subtle.decrypt(
+        {name:'AES-GCM', iv: iv},
+        key,
+        ct
+      );
+      return new TextDecoder().decode(pt);
+    }catch(e){
+      console.error('[Security] decryptContact failed:', e.message);
+      return '[encrypted]';  // never leak the raw ciphertext to the UI
+    }
+  }
+
+  /**
+   * Computes a deterministic hash of a contact number for unique-index lookups.
+   * Same plaintext → same hash, regardless of encryption IV.
+   */
+  async function hashContact(plainText){
+    if(plainText==null || plainText==='') return null;
+    const normalized = String(plainText).replace(/[^\d+]/g, '');  // digits + leading +
+    if(!normalized) return null;
+    const data = new TextEncoder().encode('sarisync.contact.lookup.v1|' + normalized);
+    const buf  = await crypto.subtle.digest('SHA-256', data);
+    return bytesToHex(new Uint8Array(buf));
+  }
+
+  return {
+    hashPassword:    hashPassword,
+    verifyPassword:  verifyPassword,
+    encryptContact:  encryptContact,
+    decryptContact:  decryptContact,
+    hashContact:     hashContact
+  };
+})();
+
+/* ════════════════════════════════════════════════════════════════════════
+   AUTH HELPERS — drop-in replacements that hash passwords transparently
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Re-hash a plain-text legacy password on successful login. */
+async function _migrateUserPassword(userId, plainPassword){
+  try{
+    const newHash = await Security.hashPassword(plainPassword);
+    await db.from('users').update({password_hash: newHash}).eq('id', userId);
+    console.log('[Security] Migrated legacy password for user', userId);
+  }catch(e){
+    console.warn('[Security] Password migration failed (will retry next login):', e.message);
+  }
+}
+
+
 // Bootstrap: ensure default admin exists on first load
 window.addEventListener('DOMContentLoaded',function(){
   ensureDefaultAdmin().catch(function(e){console.error('Bootstrap:',e);});
@@ -603,14 +804,87 @@ function showToast(msg,isError){const t=document.getElementById('toast');if(!t)r
 
 async function dbLoadCategories(){const{data,error}=await db.from('categories').select('id,name').order('name');if(error){console.error('cat:',error);return;}state.categories_cache=data;state.customCategories=data.filter(c=>!DEFAULT_CATS.includes(c.name)).map(c=>c.name);}
 async function dbLoadProducts(){const{data,error}=await db.from('products').select('*, categories(name)').order('name');if(error){console.error('prod:',error);return;}state.products=data.map(p=>({id:p.id,name:p.name,cat:p.categories?.name||'Uncategorized',emoji:p.emoji,img:p.image_data,price:parseFloat(p.price),stock:p.stock,maxStock:p.max_stock,desc:p.description||''}));}
-async function dbLoadCustomers(){const{data,error}=await db.from('customers').select('*').order('name');if(error){console.error('cust:',error);return;}state.customers=data.map(c=>({id:c.id,name:c.name,contact:c.contact_number,pts:c.loyalty_points,dateReg:new Date(c.date_registered).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'})}));}
+async function dbLoadCustomers(){
+  const{data,error}=await db.from('customers').select('*').order('name');
+  if(error){console.error('cust:',error.message);return;}
+
+  // Decrypt each customer's contact_number and detect any legacy plain-text rows for migration
+  const migrationQueue = [];
+  const customers = await Promise.all(data.map(async function(c){
+    let decryptedContact = '';
+    try{
+      decryptedContact = await Security.decryptContact(c.contact_number||'');
+
+      // Detect legacy plain-text contact that wasn't yet encrypted
+      const isLegacy = c.contact_number && typeof c.contact_number==='string'
+                       && !c.contact_number.startsWith('enc:v1:');
+      if(isLegacy) migrationQueue.push({id:c.id, plain:decryptedContact});
+
+    }catch(e){
+      console.warn('[Security] decrypt error for customer', c.id, e.message);
+      decryptedContact = '[encrypted]';
+    }
+
+    return {
+      id:        c.id,
+      name:      c.name,
+      contact:   decryptedContact,
+      pts:       c.loyalty_points,
+      dateReg:   new Date(c.date_registered).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'})
+    };
+  }));
+  state.customers = customers;
+
+  // Fire-and-forget one-time migration of legacy plain-text contacts
+  if(migrationQueue.length){
+    console.log('[Security] Migrating', migrationQueue.length, 'legacy plain-text contact numbers to AES-GCM');
+    migrationQueue.forEach(async function(rec){
+      try{
+        const enc  = await Security.encryptContact(rec.plain);
+        const hash = await Security.hashContact(rec.plain);
+        await db.from('customers').update({contact_number: enc, contact_hash: hash}).eq('id', rec.id);
+      }catch(e){
+        console.warn('[Security] Contact migration failed for', rec.id, e.message);
+      }
+    });
+  }
+}
 async function dbLoadTransactions(){const{data,error}=await db.from('transactions').select('*, transaction_items(*)').order('transaction_date',{ascending:false});if(error){console.error('txn:',error);return;}state.transactions=data.map(t=>({id:t.transaction_number,_dbId:t.id,items:(t.transaction_items||[]).map(i=>({id:i.product_id,name:i.snap_product_name,emoji:i.snap_emoji,cat:i.snap_category,price:parseFloat(i.snap_unit_price),qty:i.quantity})),subtotal:parseFloat(t.subtotal),tax:parseFloat(t.tax),total:parseFloat(t.total),loyaltyDiscount:parseFloat(t.loyalty_discount),finalTotal:parseFloat(t.final_total),paid:parseFloat(t.amount_paid),change:parseFloat(t.change_amount),method:t.payment_method,cashier:t.cashier_name,customer:t.customer_id?'Customer':'Walk-in',customerId:t.customer_id,loyaltyRedeem:t.pts_redeemed,ptsEarned:t.pts_earned,status:t.status,date:new Date(t.transaction_date),voidReason:t.void_reason,voidedAt:t.voided_at?new Date(t.voided_at):null}));state.txnSeq=data.length;}
 async function dbLoadSettings(){const{data,error}=await db.from('settings').select('setting_key,setting_value');if(error)return;const map={};data.forEach(s=>{try{map[s.setting_key]=JSON.parse(s.setting_value);}catch(e){map[s.setting_key]=s.setting_value;}});if(Array.isArray(map.custom_emojis))state.customEmojis=map.custom_emojis;if(map.business_hours_start!=null)state.businessHoursStart=parseInt(map.business_hours_start);if(map.business_hours_end!=null)state.businessHoursEnd=parseInt(map.business_hours_end);}
 async function loadAllData(){setOverlay(true,'Loading store data…');try{await Promise.all([dbLoadCategories(),dbLoadProducts(),dbLoadCustomers(),dbLoadTransactions(),dbLoadSettings()]);}catch(e){showToast('Failed to load data.',true);console.error(e);}finally{setOverlay(false);}}
 
 async function dbSaveProduct(pid,fields){let catId=state.categories_cache?.find(c=>c.name===fields.cat)?.id||null;if(!catId){const{data:cd}=await db.from('categories').upsert({name:fields.cat},{onConflict:'name'}).select('id').single();catId=cd?.id||null;}const row={name:fields.name,category_id:catId,emoji:fields.emoji,image_data:fields.img||null,price:fields.price,stock:fields.stock,max_stock:fields.maxStock||fields.stock,description:fields.desc||''};if(pid){const{error}=await db.from('products').update(row).eq('id',pid);if(error){showToast('Failed to save product.',true);return false;}}else{const{error}=await db.from('products').insert({id:fields.id,...row});if(error){showToast('Failed to add product.',true);return false;}}await dbLoadCategories();return true;}
 async function dbDeleteProduct(pid){const{error}=await db.from('products').delete().eq('id',pid);if(error){showToast('Failed to delete.',true);return false;}return true;}
-async function dbSaveCustomer(cid,fields){const row={name:fields.name,contact_number:fields.contact,loyalty_points:fields.pts||0};if(cid){const{error}=await db.from('customers').update(row).eq('id',cid);if(error){showToast('Failed to save customer.',true);return false;}}else{const{error}=await db.from('customers').insert({id:fields.id,...row});if(error){showToast('Failed to add customer.',true);return false;}}return true;}
+async function dbSaveCustomer(cid,fields){
+  // SECURITY: encrypt contact + compute deterministic hash for uniqueness lookup
+  const encryptedContact = await Security.encryptContact(fields.contact||'');
+  const contactHash      = await Security.hashContact(fields.contact||'');
+
+  const row={
+    name: fields.name,
+    contact_number: encryptedContact,
+    contact_hash:   contactHash,
+    loyalty_points: fields.pts||0
+  };
+  if(cid){
+    const{error}=await db.from('customers').update(row).eq('id',cid);
+    if(error){
+      console.error('saveCustomer:',error.message);
+      if(error.code==='23505') showToast('A customer with this contact number already exists.',true);
+      else showToast('Failed to save customer.',true);
+      return false;
+    }
+  }else{
+    const{error}=await db.from('customers').insert({id:fields.id,...row});
+    if(error){
+      console.error('saveCustomer:',error.message);
+      if(error.code==='23505') showToast('A customer with this contact number already exists.',true);
+      else showToast('Failed to add customer.',true);
+      return false;
+    }
+  }
+  return true;
+}
 async function dbDeleteCustomer(cid){const{error}=await db.from('customers').delete().eq('id',cid);if(error){showToast('Failed to delete.',true);return false;}return true;}
 async function dbSaveTransaction(txn){let safeCustId=null;if(txn.customerId){const{data:cc}=await db.from('customers').select('id').eq('id',txn.customerId).maybeSingle();safeCustId=cc?txn.customerId:null;}const row={transaction_number:String(txn.id),customer_id:safeCustId,cashier_name:String(txn.cashier||'Cashier'),subtotal:parseFloat(txn.subtotal)||0,tax:parseFloat(txn.tax)||0,total:parseFloat(txn.total)||0,loyalty_discount:parseFloat(txn.loyaltyDiscount)||0,final_total:parseFloat(txn.finalTotal)||0,amount_paid:parseFloat(txn.paid)||0,change_amount:Math.max(0,parseFloat(txn.change)||0),payment_method:String(txn.method||'Cash'),pts_redeemed:parseInt(txn.loyaltyRedeem)||0,pts_earned:parseInt(txn.ptsEarned)||0,status:String(txn.status||'completed'),transaction_date:txn.date instanceof Date?txn.date.toISOString():new Date().toISOString(),shift_id:txn.shiftId||null};const{data:td,error:te}=await db.from('transactions').insert(row).select('id').single();if(te){console.error('TXN failed:',te.message,te.details);showToast('Failed to save: '+(te.message||'DB error'),true);return false;}if(txn.items&&txn.items.length){const items=txn.items.map(i=>({transaction_id:td.id,product_id:null,snap_product_name:String(i.name||'Item'),snap_emoji:String(i.emoji||'🛒'),snap_category:String(i.cat||''),snap_unit_price:parseFloat(i.price)||0,quantity:parseInt(i.qty)||1,line_total:parseFloat((i.price||0)*(i.qty||1))}));const{error:ie}=await db.from('transaction_items').insert(items);if(ie)console.error('Items failed:',ie.message);}if(txn.customerId){const cust=state.customers.find(c=>c.id===txn.customerId);if(cust)await db.from('customers').update({loyalty_points:cust.pts}).eq('id',txn.customerId);}console.log('TXN saved:',txn.id);return true;}
 async function dbVoidTransaction(txnNum,reason,custId){const{error}=await db.from('transactions').update({status:'voided',void_reason:reason,voided_at:new Date().toISOString()}).eq('transaction_number',txnNum);if(error){showToast('Failed to void.',true);return false;}if(custId){const cust=state.customers.find(c=>c.id===custId);if(cust)await db.from('customers').update({loyalty_points:cust.pts}).eq('id',custId);}return true;}
@@ -670,7 +944,6 @@ async function handleLogin(){
   const errEl   =document.getElementById('loginError');
   setOverlay(true,'Signing in...');
   try{
-    // Ensure default admin exists before login attempt (safety net)
     await ensureDefaultAdmin();
 
     const{data,error}=await db.from('users')
@@ -680,15 +953,15 @@ async function handleLogin(){
       .maybeSingle();
     setOverlay(false);
 
-    if(error||!data||data.password_hash!==password){
-      // Fallback to local USERS only for first-ever boot (offline mode)
+    if(error||!data){
+      // Offline fallback (USERS constant) — only for true outage
       const usr=USERS[username];
       if(usr&&usr.pass===password){
         errEl.style.display='none';
         state.user=username.charAt(0).toUpperCase()+username.slice(1);
         state.role=usr.role;
         initPOS();goToShiftScreen();
-        showToast('Logged in (offline)');
+        showToast('Logged in (offline mode)');
         return;
       }
       errEl.style.display='block';
@@ -696,7 +969,20 @@ async function handleLogin(){
       return;
     }
 
-    // Check active status (already filtered above but be explicit)
+    // SECURITY: verify password using PBKDF2 (with legacy plain-text fallback)
+    const verification = await Security.verifyPassword(password, data.password_hash);
+    if(!verification.valid){
+      errEl.style.display='block';
+      errEl.textContent='Invalid username or password.';
+      return;
+    }
+
+    // If the password was stored as plain text, upgrade it to PBKDF2 NOW
+    // (we have the plaintext from the login form — won't be available later)
+    if(verification.needsRehash){
+      _migrateUserPassword(data.id, password);
+    }
+
     if(!data.is_active){
       errEl.style.display='block';
       errEl.textContent='This account is inactive. Contact your administrator.';
@@ -709,17 +995,14 @@ async function handleLogin(){
     state.currentUserId=data.id;
     state.currentUserRecord=data;
 
-    // Update last_login timestamp (non-blocking)
     db.from('users').update({last_login:new Date().toISOString()}).eq('id',data.id);
 
     await loadAllData();
     setupRealtimeSync();
 
-    // FIRST-LOGIN PASSWORD CHANGE REQUIREMENT
     if(data.must_change_password||!data.first_login_completed){
-      // Show modal BEFORE going to shift screen
       initPOS();
-      showScreen('posScreen');  // background screen
+      showScreen('posScreen');
       showFirstLoginPasswordModal(data);
       return;
     }
@@ -730,7 +1013,7 @@ async function handleLogin(){
 
   }catch(err){
     setOverlay(false);
-    console.error('Login:',err);
+    console.error('Login error:', err.message);
     const usr=USERS[username];
     if(usr&&usr.pass===password){
       errEl.style.display='none';
@@ -2354,13 +2637,17 @@ async function saveProductFull(pid){
 /* ── DB: Auto-create default admin if no users exist ───────────────────── */
 async function ensureDefaultAdmin(){
   try{
-    const{data,error,count}=await db.from('users').select('*',{count:'exact',head:true});
+    const{count,error}=await db.from('users').select('*',{count:'exact',head:true});
     if(error){console.error('[SariSync] ensureDefaultAdmin check failed:',error.message);return;}
     if((count||0)>0) return;  // At least one user exists — skip
-    console.log('[SariSync] No users found — creating default admin');
+    console.log('[SariSync] No users found — creating default admin (hashed password)');
+
+    // SECURITY: hash 'admin123' with PBKDF2 before storing
+    const hashedPassword = await Security.hashPassword('admin123');
+
     const{error:insErr}=await db.from('users').insert({
       username:'admin',
-      password_hash:'admin123',
+      password_hash: hashedPassword,
       full_name:'System Administrator',
       role:'admin',
       is_active:true,
@@ -2369,7 +2656,7 @@ async function ensureDefaultAdmin(){
       first_login_completed:false
     });
     if(insErr){console.error('[SariSync] Default admin creation failed:',insErr.message);return;}
-    console.log('[SariSync] Default admin created: username=admin password=admin123');
+    console.log('[SariSync] Default admin created (password securely hashed)');
   }catch(e){console.error('[SariSync] ensureDefaultAdmin exception:',e);}
 }
 
@@ -2384,12 +2671,15 @@ async function dbLoadUsers(){
 }
 
 async function dbCreateUser(fields){
-  // Validate uniqueness of username
   const{data:existing}=await db.from('users').select('id').eq('username',fields.username.toLowerCase().trim()).maybeSingle();
   if(existing){showToast('Username already exists.',true);return false;}
+
+  // SECURITY: PBKDF2 hash the plain-text password before sending to Supabase
+  const hashedPassword = await Security.hashPassword(fields.password);
+
   const{error}=await db.from('users').insert({
     username:fields.username.toLowerCase().trim(),
-    password_hash:fields.password,
+    password_hash: hashedPassword,
     full_name:fields.fullName,
     role:fields.role,
     is_active:fields.isActive!==false,
@@ -2397,7 +2687,7 @@ async function dbCreateUser(fields){
     must_change_password:!!fields.mustChangePassword,
     first_login_completed:!fields.mustChangePassword
   });
-  if(error){console.error('createUser:',error);showToast('Failed to create user.',true);return false;}
+  if(error){console.error('createUser:',error.message);showToast('Failed to create user.',true);return false;}
   auditLog('user_created',{username:fields.username,role:fields.role,full_name:fields.fullName},state.user);
   return true;
 }
@@ -2415,12 +2705,14 @@ async function dbUpdateUser(uid,fields){
 }
 
 async function dbResetPassword(uid,newPassword){
+  // SECURITY: hash the new password before saving
+  const hashedPassword = await Security.hashPassword(newPassword);
   const{error}=await db.from('users').update({
-    password_hash:newPassword,
+    password_hash: hashedPassword,
     must_change_password:true,
     first_login_completed:false
   }).eq('id',uid);
-  if(error){console.error('resetPw:',error);showToast('Failed to reset password.',true);return false;}
+  if(error){console.error('resetPw:',error.message);showToast('Failed to reset password.',true);return false;}
   auditLog('password_reset',{user_id:uid,reset_by:state.user},state.user);
   return true;
 }
@@ -2477,18 +2769,20 @@ async function submitFirstLoginPassword(uid){
   if(!newPass||newPass.length<6){showErr('Password must be at least 6 characters.');return;}
   if(newPass!==confirmPass){showErr('Passwords do not match.');return;}
 
-  // Check if new username conflicts (only if changed)
   if(newUsername!==state.user.toLowerCase()){
     const{data:existing}=await db.from('users').select('id').eq('username',newUsername).neq('id',uid).maybeSingle();
     if(existing){showErr('That username is already taken.');return;}
   }
 
+  // SECURITY: hash the new password
+  const hashedPassword = await Security.hashPassword(newPass);
+
   const{error}=await db.from('users').update({
     username:newUsername,
-    password_hash:newPass,
+    password_hash: hashedPassword,
     must_change_password:false,
     first_login_completed:true,
-    is_default_admin:false  // clear default flag after first change
+    is_default_admin:false
   }).eq('id',uid);
   if(error){showErr('Failed to save: '+error.message);return;}
 

@@ -4,18 +4,6 @@ import sarisync.enums.PaymentMethod;
 
 /**
  * ABSTRACTION + POLYMORPHISM
- *
- * IPaymentProcessor defines the contract that every payment channel must fulfil.
- * The TransactionService works exclusively with this interface — it never
- * references CashPaymentProcessor, CardPaymentProcessor, etc. directly.
- *
- * This enables POLYMORPHISM: the service calls process() on any IPaymentProcessor
- * reference and the correct subclass behaviour executes automatically.
- *
- * To add a new payment method (e.g. Maya, ShopeePay):
- *   1. Implement this interface (or extend AbstractPaymentProcessor).
- *   2. Register the new processor in PaymentProcessorFactory.
- *   No other class needs to change.
  */
 public interface IPaymentProcessor {
 

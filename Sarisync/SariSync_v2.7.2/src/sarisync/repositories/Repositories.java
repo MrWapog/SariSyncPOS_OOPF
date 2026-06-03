@@ -7,13 +7,8 @@ import sarisync.models.Transaction;
 import java.util.*;
 import java.util.stream.Collectors;
 
-// ══════════════════════════════════════════════════════════════════════════
-//  INHERITANCE — Both repositories implement IRepository.
-//  The service layer depends only on the IRepository interface, so these
-//  in-memory implementations can later be replaced with JPA/SQL versions
-//  without touching a single line of service code.
-// ══════════════════════════════════════════════════════════════════════════
 
+//  INHERITANCE 
 // ─── Product Repository ───────────────────────────────────────────────────
 
 /**
@@ -59,10 +54,6 @@ class InMemoryProductRepositoryImpl implements IRepository<Product, String> {
 
 // ─── Transaction Repository ───────────────────────────────────────────────
 
-/**
- * In-memory implementation of IRepository<Transaction, String>.
- * Adds a domain-specific findLastCompleted() query.
- */
 class InMemoryTransactionRepositoryImpl implements IRepository<Transaction, String> {
 
     protected final Map<String, Transaction> store = new LinkedHashMap<>();

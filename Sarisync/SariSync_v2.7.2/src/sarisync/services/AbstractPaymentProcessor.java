@@ -3,17 +3,7 @@ package sarisync.services;
 import sarisync.interfaces.IPaymentProcessor;
 
 /**
- * ABSTRACTION + INHERITANCE (Template Method Pattern)
- *
- * AbstractPaymentProcessor provides the shared skeleton for all payment
- * processors. It handles common validation (amountDue > 0) and delegates
- * the channel-specific logic to the abstract doProcess() method.
- *
- * Concrete classes extend this and implement:
- *   - doProcess()         → channel-specific logic
- *   - getPaymentMethod()  → enum constant
- *   - getDisplayName()    → UI label
- *
+ * ABSTRACTION + INHERITANCE
  * Subclasses:
  *   CashPaymentProcessor   – validates cash tendered, calculates change
  *   CardPaymentProcessor   – simulates card authorisation (no change)

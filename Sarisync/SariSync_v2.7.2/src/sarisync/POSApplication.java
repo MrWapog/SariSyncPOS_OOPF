@@ -12,26 +12,6 @@ import sarisync.services.*;
 import java.math.BigDecimal;
 import java.util.Optional;
 
-/**
- * ╔══════════════════════════════════════════════════════════════════════╗
- * ║         S A R I S Y N C  –  P O S  A P P L I C A T I O N             ║
- * ║                    Java OOP Refactored v2.7.2                        ║
- * ╚══════════════════════════════════════════════════════════════════════╝
- *
- * CHANGE LOG v2.7.2:
- *  ✅ Removed Quick Sign In — no hardcoded demo logins
- *  ✅ User Management module — admin CRUD: create / edit / activate / deactivate / reset password
- *  ✅ Default admin auto-creation — system seeds admin/admin123 only if no users exist
- *  ✅ First-login password change required for default admin
- *  ✅ Shift Management — open/close with shortage/overage tracking
- *  ✅ Audit Service — logs user, shift, transaction and product events
- *  ✅ User model extended: fullName, isDefaultAdmin, mustChangePassword,
- *      firstLoginCompleted, lastLogin
- *
- *  Carried over from v2.5.0:
- *      Products and customers are added only via Admin Panel.
- *      Single shared repository instance across Admin and POS.
- */
 public class POSApplication {
 
     public static void main(String[] args) {

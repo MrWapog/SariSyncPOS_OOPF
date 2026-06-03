@@ -8,17 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * POLYMORPHISM — Factory that returns the correct IPaymentProcessor
- * for a given PaymentMethod without exposing concrete types to callers.
- *
- * Usage:
- *   IPaymentProcessor processor = PaymentProcessorFactory.get(PaymentMethod.GCASH);
- *   IPaymentProcessor.PaymentResult result = processor.process(finalTotal, amountPaid);
- *
- * Adding a new payment method:
- *   1. Create a new class in PaymentProcessors.java
- *   2. Register it in the REGISTRY map below
- *   No other class needs to change.
+ * POLYMORPHISM 
  */
 public final class PaymentProcessorFactory {
 
@@ -36,7 +26,6 @@ public final class PaymentProcessorFactory {
     }
 
     /**
-     * Returns the processor for the given payment method.
      * @throws IllegalArgumentException if the method is not registered.
      */
     public static IPaymentProcessor get(PaymentMethod method) {

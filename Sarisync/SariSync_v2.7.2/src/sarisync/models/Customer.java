@@ -7,10 +7,6 @@ import java.util.Objects;
 
 /**
  * ENCAPSULATION + INHERITANCE
- *
- * Updated to include contactNumber and dateRegistered for the
- * full Customer Management feature in the Admin Panel.
- *
  * Business Rules (from POSConfig):
  *  - ₱100 spent = 1 loyalty point
  *  - 100 points = ₱10 discount

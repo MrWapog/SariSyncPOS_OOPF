@@ -18,14 +18,6 @@ import java.util.stream.Collectors;
 
 /**
  * ENCAPSULATION + POLYMORPHISM
- *
- * TransactionService orchestrates the full payment and void flow.
- *
- * v2.6.0 additions:
- *  - voidTransaction(id, reason) — accepts a reason, records voidedAt, restores stock
- *  - findTodayCompleted()        — filters by today's date + COMPLETED status only
- *  - getTodayRevenue()           — used by "Sales Today" dashboard card
- *  - All revenue/count queries filter to COMPLETED only (excludes VOIDED)
  */
 public class TransactionService {
 
@@ -44,10 +36,6 @@ public class TransactionService {
 
     // ── Core Payment Flow ─────────────────────────────────────────────────
 
-    /**
-     * Processes a full payment transaction.
-     * Validates stock → charges payment → deducts stock → awards loyalty → persists.
-     */
     public Transaction processPayment(List<CartItem> cartItems,
                                       PaymentMethod  paymentMethod,
                                       double         amountPaid,
@@ -109,15 +97,6 @@ public class TransactionService {
 
     /**
      * Voids a transaction by its transaction NUMBER (e.g. "TXN-20260519-001").
-     *
-     * Steps:
-     *  1. Finds the transaction
-     *  2. Validates it is COMPLETED
-     *  3. Calls transaction.void_(reason) — sets status, voidReason, voidedAt
-     *  4. Restores stock for every item in the transaction
-     *  5. Reverses loyalty points on the customer (if provided)
-     *  6. Persists the updated transaction
-     *
      * @param transactionNumber the TXN-XXXXXXXX-NNN identifier
      * @param reason            cashier/admin reason (may be blank)
      * @param customer          customer to reverse points on (may be null for walk-in)
@@ -147,10 +126,6 @@ public class TransactionService {
         return txn;
     }
 
-    /**
-     * Convenience overload — voids the MOST RECENT completed transaction.
-     * Used by the "Undo Last Transaction" button.
-     */
     public Transaction voidLastTransaction(String reason, Customer customer) {
         Transaction last = transactionRepository.findLastCompleted()
             .orElseThrow(() -> new IllegalStateException("No completed transaction to void."));
@@ -160,11 +135,6 @@ public class TransactionService {
     // ── Queries ───────────────────────────────────────────────────────────
 
     public List<Transaction> findAll() { return transactionRepository.findAll(); }
-
-    /**
-     * Returns only COMPLETED transactions.
-     * Used for all revenue/analytics calculations.
-     */
     public List<Transaction> findCompleted() {
         return transactionRepository.findAll().stream()
             .filter(Transaction::isCompleted)

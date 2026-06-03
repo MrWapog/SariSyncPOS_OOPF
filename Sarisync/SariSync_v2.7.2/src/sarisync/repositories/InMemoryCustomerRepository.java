@@ -6,11 +6,7 @@ import sarisync.models.Customer;
 import java.util.*;
 
 /**
- * INHERITANCE — implements IRepository<Customer, String>
- *
- * In-memory storage for Customer entities.
- * Shares the same instance across Admin Panel and POS Dashboard
- * so any customer added by Admin is immediately visible in POS.
+ * INHERITANCE
  */
 public class InMemoryCustomerRepository implements IRepository<Customer, String> {
 
