@@ -1,9 +1,5 @@
 package sarisync.enums;
 
-/**
- * Enumerates all auditable events tracked by AuditService.
- * v2.7.2 — Added user management and shift events.
- */
 public enum AuditEventType {
     USER_CREATED            ("user_created"),
     USER_UPDATED            ("user_updated"),
